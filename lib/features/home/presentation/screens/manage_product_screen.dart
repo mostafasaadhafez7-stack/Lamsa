@@ -176,7 +176,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                   child: BlocBuilder<ProductsCubit, ProductsState>(
                     builder: (context, productsState) {
                       final bool isLoading =
-                          productsState is GetProductsLoadingState;
+                          productsState is GetProductsLoadingState && _products.isEmpty;
 
                       if (isLoading) {
                         return const Center(
@@ -185,18 +185,32 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                       }
 
                       if (_products.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'No products yet',
-                            style: AppStyles.style14Regular
-                                .copyWith(color: Colors.grey),
+                        return RefreshIndicator(
+                          color: AppColors.primaryClr,
+                          onRefresh: () => context.read<ProductsCubit>().getProducts(),
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                              Center(
+                                child: Text(
+                                  'No products yet',
+                                  style: AppStyles.style14Regular
+                                      .copyWith(color: Colors.grey),
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }
 
-                      return ListView.builder(
-                        itemCount: _products.length,
-                        itemBuilder: (context, index) {
+                      return RefreshIndicator(
+                        color: AppColors.primaryClr,
+                        onRefresh: () => context.read<ProductsCubit>().getProducts(),
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: _products.length,
+                          itemBuilder: (context, index) {
                           final product = _products[index];
                           return Card(
                                 elevation: 0,
@@ -327,8 +341,9 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                                 ),
                               );
                             },
-                          );
-                        },
+                          ),
+                        );
+                      },
                       ),
                     ),
                   ),

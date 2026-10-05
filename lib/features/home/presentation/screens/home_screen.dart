@@ -1,6 +1,7 @@
 import 'package:final_project/core/theme/app_colors.dart';
 import 'package:final_project/core/theme/app_styles.dart';
 import 'package:final_project/features/home/presentation/products_cubit/products_cubit.dart';
+import 'package:final_project/features/home/presentation/products_cubit/products_states.dart';
 import 'package:final_project/features/home/presentation/widgets/custom_categories_home.dart';
 import 'package:final_project/features/home/presentation/widgets/cutom_gridview_home.dart';
 import 'package:final_project/features/home/presentation/widgets/home_screen_header.dart';
@@ -15,46 +16,84 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ProductsCubit()
-        ..getCategories()
-        ..getProducts()
-        ..getOffers(),
+      create: (context) => ProductsCubit()..loadHomeData(),
       child: Scaffold(
         backgroundColor: AppColors.backgroundClr,
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  HomeScreenHeader(onTabChange: onTabChange),
-                  const SizedBox(height: 24),
-                  OffersSection(),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Categories",
-                    style: AppStyles.style16SemiBold.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textClr,
+          child: BlocBuilder<ProductsCubit, ProductsState>(
+            buildWhen: (previous, current) =>
+                current is GetHomeDataLoadingState ||
+                current is GetProductsSuccessState ||
+                current is GetProductsFailureState ||
+                current is ProductsInitialState,
+            builder: (context, state) {
+              final cubit = context.read<ProductsCubit>();
+              final isInitialLoading = state is GetHomeDataLoadingState ||
+                  (cubit.products.isEmpty &&
+                      cubit.categories.isEmpty &&
+                      cubit.offers.isEmpty &&
+                      (cubit.isProductsLoading || cubit.isCategoriesLoading || cubit.isOffersLoading));
+
+              if (isInitialLoading) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        color: AppColors.primaryClr,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Loading LAMSA store...',
+                        style: AppStyles.style14SemiBold.copyWith(
+                          color: AppColors.grayClr,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                color: AppColors.primaryClr,
+                onRefresh: () => cubit.loadHomeData(),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        HomeScreenHeader(onTabChange: onTabChange),
+                        const SizedBox(height: 24),
+                        const OffersSection(),
+                        const SizedBox(height: 20),
+                        Text(
+                          "Categories",
+                          style: AppStyles.style16SemiBold.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textClr,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        CustomCategoriesHome(onTabChange: onTabChange),
+                        const SizedBox(height: 20),
+                        Text(
+                          "Trending Now",
+                          style: AppStyles.style16SemiBold.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textClr,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const CutomGridviewHome(),
+                        const SizedBox(height: 80),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  CustomCategoriesHome(onTabChange: onTabChange),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Trending Now",
-                    style: AppStyles.style16SemiBold.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textClr,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const CutomGridviewHome(),
-                  SizedBox(height: 80),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),

@@ -52,3 +52,42 @@ class UnverifiedAccountState extends AuthState {
   final String email;
   UnverifiedAccountState(this.email);
 }
+
+// Forgot Password States
+class ForgotPasswordLoadingState extends AuthState {}
+
+class ForgotPasswordSuccessState extends AuthState {}
+
+class ForgotPasswordFailureState extends AuthState {
+  final String error;
+  ForgotPasswordFailureState({required this.error});
+}
+
+// Reset Password States
+class ResetPasswordLoadingState extends AuthState {}
+
+class ResetPasswordSuccessState extends AuthState {}
+
+class ResetPasswordFailureState extends AuthState {
+  final String error;
+  ResetPasswordFailureState({required this.error});
+}
+
+// Profile States
+class GetProfileLoadingState extends AuthState {}
+
+class GetProfileSuccessState extends AuthState {
+  final Map<String, dynamic> user;
+  GetProfileSuccessState({required this.user});
+}
+
+class GetProfileFailureState extends AuthState {
+  final String error;
+  GetProfileFailureState({required this.error});
+}
+
+// Logout States
+class LogoutLoadingState extends AuthState {}
+
+class LogoutSuccessState extends AuthState {}
+

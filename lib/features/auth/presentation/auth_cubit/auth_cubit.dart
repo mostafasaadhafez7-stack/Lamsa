@@ -92,14 +92,71 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  //
+  // Forgot Password
+  Future<void> forgotPassword({required String email}) async {
+    emit(ForgotPasswordLoadingState());
+    try {
+      await authRemoteDataSource.forgotPassword(email: email);
+      emit(ForgotPasswordSuccessState());
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      emit(ForgotPasswordFailureState(error: msg));
+    }
+  }
+
+  // Reset Password
+  Future<void> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    emit(ResetPasswordLoadingState());
+    try {
+      await authRemoteDataSource.resetPassword(
+        email: email,
+        otp: otp,
+        newPassword: newPassword,
+      );
+      emit(ResetPasswordSuccessState());
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      emit(ResetPasswordFailureState(error: msg));
+    }
+  }
+
+  // Get Current User Profile
+  Future<void> getCurrentUser() async {
+    emit(GetProfileLoadingState());
+    try {
+      final user = await authRemoteDataSource.getCurrentUser();
+      emit(GetProfileSuccessState(user: user));
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      emit(GetProfileFailureState(error: msg));
+    }
+  }
+
+  // Resend OTP
   Future<void> resendOtp({required String email}) async {
     emit(ResendOtpLoadingState());
     try {
       await authRemoteDataSource.resendOtp(email: email);
       emit(ResendOtpSuccessState());
     } catch (e) {
-      emit(ResendOtpFailureState(e.toString()));
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      emit(ResendOtpFailureState(msg));
+    }
+  }
+
+  // Logout
+  Future<void> logout() async {
+    emit(LogoutLoadingState());
+    try {
+      await authRemoteDataSource.logout();
+    } catch (e) {
+      log('Logout error: $e');
+    } finally {
+      emit(LogoutSuccessState());
     }
   }
 }

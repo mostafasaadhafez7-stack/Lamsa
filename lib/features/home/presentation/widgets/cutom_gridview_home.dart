@@ -4,6 +4,7 @@ import 'package:final_project/features/home/presentation/products_cubit/products
 import 'package:final_project/features/home/presentation/products_cubit/products_states.dart';
 import 'package:final_project/features/home/presentation/screens/product_screen.dart';
 import 'package:final_project/features/reviews/presentation/reviews_cubit/reviews_cubit.dart';
+import 'package:final_project/features/wishlist/presentation/widgets/favorite_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -21,46 +22,116 @@ class CutomGridviewHome extends StatelessWidget {
           current is DeleteProductSuccessState ||
           current is DeleteProductFailureState,
       listener: (context, state) {
-        if (state is addToCartloding) {
+        if (state is addToCartFailure) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('loading.....'),
-              backgroundColor: AppColors.brown2Clr,
-            ),
-          );
-        } else if (state is addToCartFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erorr......'),
-              backgroundColor: AppColors.redClr,
+              content: const Row(
+                children: [
+                  Icon(Icons.error_outline_rounded, color: Colors.white, size: 22),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Failed to add item to cart. Please try again.',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFFD32F2F),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
             ),
           );
         } else if (state is addToCartSuccess) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('success......'),
-              backgroundColor: AppColors.primaryClr,
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Item added to cart successfully!',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF2E7D32),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
             ),
           );
         } else if (state is DeleteProductLoadingState) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Deleting product...'),
-              backgroundColor: Colors.orange,
+            SnackBar(
+              content: const Row(
+                children: [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Deleting product...',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.orange.shade800,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
             ),
           );
         } else if (state is DeleteProductFailureState) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.errorMessage),
-              backgroundColor: AppColors.redClr,
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Colors.white, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      state.errorMessage,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFFD32F2F),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 3),
             ),
           );
         } else if (state is DeleteProductSuccessState) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppColors.primaryClr,
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      state.message,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF2E7D32),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -72,16 +143,18 @@ class CutomGridviewHome extends StatelessWidget {
           current is SearchProductsLoadingState ||
           current is SearchProductsSuccessState ||
           current is SearchProductsFailureState ||
+          current is FilterByCategoryState ||
           current is ProductsInitialState,
       builder: (context, state) {
         final cubit = context.read<ProductsCubit>();
 
-        if (cubit.isProductsLoading ||
-            (state is ProductsInitialState && cubit.products.isEmpty) ||
-            (state is GetProductsLoadingState)) {
+        if ((state is GetProductsLoadingState ||
+                state is ProductsInitialState ||
+                state is SearchProductsLoadingState) &&
+            cubit.products.isEmpty) {
           return const Center(
             child: Padding(
-              padding: EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(40.0),
               child: CircularProgressIndicator(),
             ),
           );
@@ -89,18 +162,41 @@ class CutomGridviewHome extends StatelessWidget {
 
         if (state is GetProductsFailureState && cubit.products.isEmpty) {
           return Center(
-            child: Text(
-              state.error ?? "Failed to load products",
-              style: AppStyles.style14SemiBold.copyWith(color: Colors.red),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                state.error ?? "Failed to load products",
+                style: AppStyles.style14SemiBold.copyWith(color: Colors.red),
+              ),
             ),
           );
         }
 
         if (cubit.products.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Text("No products available"),
+              padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 60,
+                    color: AppColors.grayClr.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    "No products found",
+                    style: AppStyles.style18ExtraBold.copyWith(color: AppColors.textClr),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Try searching with different keywords.",
+                    textAlign: TextAlign.center,
+                    style: AppStyles.style14Regular.copyWith(color: AppColors.grayClr),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -194,7 +290,7 @@ class CutomGridviewHome extends StatelessWidget {
                                     onPressed: () {
                                       BlocProvider.of<ProductsCubit>(
                                         context,
-                                      ).addToCart(product.id);
+                                      ).addToCart(product.id ?? '');
                                     },
                                     icon: Icon(
                                       Icons.add_circle_outlined,
@@ -212,24 +308,8 @@ class CutomGridviewHome extends StatelessWidget {
                   ),
                   Positioned(
                     top: 8,
-                    right: 20,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.black.withValues(alpha: 0.2),
-                      radius: 18,
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        icon: const Icon(
-                          Icons.delete,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          context.read<ProductsCubit>().deleteProduct(
-                            productId: product.id.toString(),
-                          );
-                        },
-                      ),
-                    ),
+                    right: 8,
+                    child: FavoriteButton(product: product),
                   ),
                 ],
               ),

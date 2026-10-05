@@ -40,7 +40,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return BlocProvider(
+      create: (context) => AuthCubit(),
+      child: Scaffold(
       backgroundColor: AppColors.backgroundClr,
       body: SafeArea(
         child: Padding(
@@ -196,6 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

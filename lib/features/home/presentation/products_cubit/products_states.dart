@@ -5,6 +5,8 @@ abstract class ProductsState {}
 
 class ProductsInitialState extends ProductsState {}
 
+class GetHomeDataLoadingState extends ProductsState {}
+
 // Products States
 class GetProductsLoadingState extends ProductsState {}
 
@@ -32,7 +34,13 @@ class SearchProductsFailureState extends ProductsState {
   SearchProductsFailureState({this.error});
 }
 
-// Categories States
+// Category Filter State
+class FilterByCategoryState extends ProductsState {
+  final List<ProductModel> products;
+  final String? activeCategoryId; // null → "All"
+  FilterByCategoryState({required this.products, this.activeCategoryId});
+}
+
 class GetCategoriesLoadingState extends ProductsState {}
 
 class GetCategoriesSuccessState extends ProductsState {}

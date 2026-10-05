@@ -10,7 +10,9 @@ import 'package:final_project/features/home/presentation/widgets/counter_button.
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({super.key});
+  const CartScreen({super.key, this.onStartShopping});
+
+  final VoidCallback? onStartShopping;
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -53,17 +55,47 @@ class _CartScreenState extends State<CartScreen> {
             },
             listener: (context, state) {
               if (state is removeCartfialure) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('error.....'),
-                    backgroundColor: AppColors.redClr,
+                  SnackBar(
+                    content: const Row(
+                      children: [
+                        Icon(Icons.error_outline_rounded, color: Colors.white, size: 22),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Failed to remove item from cart.',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: const Color(0xFFD32F2F),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               } else if (state is removeCartsuccess) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('success.....'),
-                    backgroundColor: AppColors.primaryClr,
+                    content: const Row(
+                      children: [
+                        Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Item removed from cart.',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: const Color(0xFF2E7D32),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }
@@ -74,16 +106,42 @@ class _CartScreenState extends State<CartScreen> {
                   current is getcartscusses;
             },
             builder: (context, state) {
-              if (state is getcartloding) {
+              if (state is getcartloding && productsCart.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               } else if (state is getcartempty) {
-                return const CartEmptyScreen();
+                return RefreshIndicator(
+                  color: AppColors.primaryClr,
+                  onRefresh: () => context.read<CartCubit>().getcart(),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.7,
+                      child: CartEmptyScreen(onStartShopping: widget.onStartShopping),
+                    ),
+                  ),
+                );
               } else if (state is getcartscusses) {
                 productsCart = state.productscart;
                 if (productsCart.isEmpty) {
-                  return const CartEmptyScreen();
+                  return RefreshIndicator(
+                    color: AppColors.primaryClr,
+                    onRefresh: () => context.read<CartCubit>().getcart(),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.7,
+                        child: CartEmptyScreen(onStartShopping: widget.onStartShopping),
+                      ),
+                    ),
+                  );
                 }
-                return SingleChildScrollView(
+              }
+
+              return RefreshIndicator(
+                color: AppColors.primaryClr,
+                onRefresh: () => context.read<CartCubit>().getcart(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -386,9 +444,8 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                     ],
                   ),
-                );
-              }
-              return const CartEmptyScreen();
+                ),
+              );
             },
           ),
         ),

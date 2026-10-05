@@ -24,11 +24,11 @@ class CartCubit extends Cubit<CartState> {
     );
   }
 
-  Future<dynamic> removeCart(cartId) async {
+  Future<void> removeCart(String cartId) async {
     if (isClosed) return;
     emit(removeCartloading());
     try {
-      final val = await cartRemoteDataSource.removeCart(cartId);
+      await cartRemoteDataSource.removeCart(cartId);
       if (!isClosed) emit(removeCartsuccess(removeProductcart: []));
       getcart();
     } catch (error) {

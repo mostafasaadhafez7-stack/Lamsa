@@ -36,7 +36,13 @@ class _BottomNavigationBarScreenState extends State<BottomNavigationBarScreen> {
           const CategoryProductsScreen(),
           BlocProvider(
             create: (context) => CartCubit(),
-            child: const CartScreen(),
+            child: CartScreen(
+              onStartShopping: () {
+                setState(() {
+                  currentIndex = 0;
+                });
+              },
+            ),
           ),
           const ProfileScreen(),
         ];

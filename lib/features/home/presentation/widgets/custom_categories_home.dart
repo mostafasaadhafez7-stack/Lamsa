@@ -5,9 +5,16 @@ import 'package:final_project/features/home/presentation/products_cubit/products
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class CustomCategoriesHome extends StatelessWidget {
+class CustomCategoriesHome extends StatefulWidget {
   const CustomCategoriesHome({super.key, this.onTabChange});
   final ValueChanged<int>? onTabChange;
+
+  @override
+  State<CustomCategoriesHome> createState() => _CustomCategoriesHomeState();
+}
+
+class _CustomCategoriesHomeState extends State<CustomCategoriesHome> {
+  String? _selectedCategoryId; // null = "All"
 
   @override
   Widget build(BuildContext context) {
@@ -16,22 +23,24 @@ class CustomCategoriesHome extends StatelessWidget {
           current is GetCategoriesLoadingState ||
           current is GetCategoriesSuccessState ||
           current is GetCategoriesFailureState ||
+          current is FilterByCategoryState ||
           current is ProductsInitialState,
-      builder: (context, state) {
-        final cubit = context.read<ProductsCubit>();
+      builder: (blocContext, state) {
+        final cubit = blocContext.read<ProductsCubit>();
 
-        if (cubit.isCategoriesLoading ||
-            (state is ProductsInitialState && cubit.categories.isEmpty) ||
-            (state is GetCategoriesLoadingState)) {
+        if ((cubit.isCategoriesLoading ||
+                state is GetCategoriesLoadingState ||
+                state is ProductsInitialState) &&
+            cubit.categories.isEmpty) {
           return const SizedBox(
-            height: 105,
+            height: 110,
             child: Center(child: CircularProgressIndicator()),
           );
         }
 
         if (state is GetCategoriesFailureState && cubit.categories.isEmpty) {
           return SizedBox(
-            height: 105,
+            height: 110,
             child: Center(
               child: Text(
                 state.error ?? "Failed to load categories",
@@ -43,63 +52,141 @@ class CustomCategoriesHome extends StatelessWidget {
 
         if (cubit.categories.isEmpty) {
           return const SizedBox(
-            height: 105,
+            height: 110,
             child: Center(child: Text("No categories available")),
           );
         }
 
-        return Column(
-          children: [
-            SizedBox(
-              height: 105,
-              child: ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                scrollDirection: Axis.horizontal,
-                itemCount: cubit.categories.length,
-                itemBuilder: (context, index) {
-                  final category = cubit.categories[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: Column(
-                      children: [
-                        InkWell(
-                          onTap: () {
-                            onTabChange?.call(1);
-                          },
-                          child: CircleAvatar(
-                            radius: 40,
-                            child: ClipOval(
-                              child: Image.network(
-                                category["coverPictureUrl"] ?? "",
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.image_not_supported_outlined,
-                                    size: 35,
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          category["name"] ?? "",
-                          style: AppStyles.style12Medium.copyWith(
-                            color: AppColors.textClr,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+        // Build items list — "All" first, then real categories
+        final allItems = <Map<String, dynamic>>[
+          {'id': null, 'name': 'All', 'coverPictureUrl': null},
+          ...cubit.categories.map((c) {
+            final map = (c is Map)
+                ? Map<String, dynamic>.from(c)
+                : <String, dynamic>{};
+            return {
+              'id': map['id']?.toString(),
+              'name': (map['name'] ?? '').toString(),
+              'coverPictureUrl': map['coverPictureUrl']?.toString(),
+            };
+          }),
+        ];
+
+        return SizedBox(
+          height: 110,
+          child: ListView.builder(
+            physics: const BouncingScrollPhysics(),
+            scrollDirection: Axis.horizontal,
+            itemCount: allItems.length,
+            itemBuilder: (_, index) {
+              final item = allItems[index];
+              final id = item['id'] as String?;
+              final isSelected = _selectedCategoryId == id;
+              final name = item['name'] as String;
+              final imageUrl = item['coverPictureUrl'] as String?;
+
+              return _CategoryChip(
+                id: id,
+                name: name,
+                imageUrl: imageUrl,
+                isSelected: isSelected,
+                onTap: () {
+                  // Toggle: tap selected → show all; tap new → filter
+                  final newId = (_selectedCategoryId == id) ? null : id;
+                  setState(() => _selectedCategoryId = newId);
+                  cubit.filterByCategory(newId);
                 },
-              ),
-            ),
-          ],
+              );
+            },
+          ),
         );
       },
     );
   }
+}
+
+/// Extracted to its own StatelessWidget so each chip has its own hit-test region.
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.id,
+    required this.name,
+    required this.imageUrl,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String? id;
+  final String name;
+  final String? imageUrl;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(50),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Selection ring around avatar
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primaryClr
+                          : Colors.transparent,
+                      width: 2.5,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 34,
+                    backgroundColor: isSelected
+                        ? AppColors.primaryClr.withValues(alpha: 0.12)
+                        : AppColors.bottomBackgroundClr,
+                    child: ClipOval(
+                      child: imageUrl != null && imageUrl!.isNotEmpty
+                          ? Image.network(
+                              imageUrl!,
+                              width: 68,
+                              height: 68,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stack) =>
+                                  _icon(isSelected),
+                            )
+                          : _icon(isSelected),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  name,
+                  style: AppStyles.style12Medium.copyWith(
+                    color: isSelected ? AppColors.primaryClr : AppColors.textClr,
+                    fontWeight:
+                        isSelected ? FontWeight.w700 : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _icon(bool isSelected) => Icon(
+        Icons.category_rounded,
+        size: 30,
+        color: isSelected ? AppColors.primaryClr : AppColors.grayClr,
+      );
 }

@@ -12,6 +12,8 @@ import 'package:final_project/features/home/presentation/widgets/reviews_section
 import 'package:final_project/features/reviews/presentation/reviews_cubit/reviews_cubit.dart';
 import 'package:final_project/features/reviews/presentation/reviews_cubit/reviews_states.dart';
 import 'package:final_project/features/reviews/presentation/widgets/write_review.dart';
+import 'package:final_project/features/wishlist/presentation/cubits/wishlist_cubit.dart';
+import 'package:final_project/features/wishlist/presentation/cubits/wishlist_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -35,25 +37,48 @@ class _ProductDetailsState extends State<ProductDetails> {
   Widget build(BuildContext context) {
     return BlocListener<ProductsCubit, ProductsState>(
       listener: (context, state) {
-        if (state is addToCartloding) {
+        if (state is addToCartFailure) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('loading.....'),
-              backgroundColor: AppColors.brown2Clr,
-            ),
-          );
-        } else if (state is addToCartFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erorr......'),
-              backgroundColor: AppColors.redClr,
+              content: const Row(
+                children: [
+                  Icon(Icons.error_outline_rounded, color: Colors.white, size: 22),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Failed to add item to cart. Please try again.',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFFD32F2F),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
             ),
           );
         } else if (state is addToCartSuccess) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('success......'),
-              backgroundColor: AppColors.primaryClr,
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Item added to cart successfully!',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF2E7D32),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -83,18 +108,50 @@ class _ProductDetailsState extends State<ProductDetails> {
               icon: Icon(Icons.share_outlined),
             ),
             SizedBox(height: 16),
-            IconButton(
-              onPressed: () {},
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.cardFillClr,
-                side: BorderSide(color: AppColors.borderSideClr),
-              ),
-              icon: Icon(
-                Icons.favorite_border_outlined,
-                color: Color(0xffB9785B),
-              ),
+            BlocBuilder<WishlistCubit, WishlistState>(
+              builder: (context, state) {
+                final isFav = context.read<WishlistCubit>().isFavorite(widget.product.id);
+                return IconButton(
+                  tooltip: isFav ? 'Remove from Wishlist' : 'Add to Wishlist',
+                  onPressed: () {
+                    context.read<WishlistCubit>().toggleFavorite(widget.product);
+                    final newlyFav = !isFav;
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(
+                              newlyFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              newlyFav ? 'Added to Wishlist ❤️' : 'Removed from Wishlist',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: newlyFav ? const Color(0xFFC2185B) : Colors.grey.shade800,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.cardFillClr,
+                    side: BorderSide(color: AppColors.borderSideClr),
+                  ),
+                  icon: Icon(
+                    isFav ? Icons.favorite_rounded : Icons.favorite_border_outlined,
+                    color: isFav ? const Color(0xFFE53935) : AppColors.primaryClr,
+                  ),
+                );
+              },
             ),
-            SizedBox(width: 20),
+            const SizedBox(width: 20),
           ],
         ),
         body: SingleChildScrollView(
@@ -132,7 +189,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                             log("add to cart pressed ${widget.product.name}");
                             BlocProvider.of<ProductsCubit>(
                               context,
-                            ).addToCart(widget.product.id);
+                            ).addToCart(widget.product.id ?? '');
                           },
                           child: Container(
                             height: 52,

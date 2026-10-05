@@ -16,3 +16,8 @@ Future<void> saveToken(String value) async {
 Future<void> loadToken() async {
   token = await storage.read(key: 'token') ?? '';
 }
+
+Future<void> clearToken() async {
+  token = '';
+  await storage.delete(key: 'token');
+}

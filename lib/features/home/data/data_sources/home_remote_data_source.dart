@@ -33,24 +33,28 @@ class HomeRemoteDataSource {
       final Response response = await dio.get(
         "https://accessories-eshop.runasp.net/api/products",
         queryParameters: {
-          'search': normalizedQuery,
-           'page': 1,
+          if (normalizedQuery.isNotEmpty) 'searchTerm': normalizedQuery,
+          'page': 1,
           'pageSize': 230,
-          },
+        },
       );
-      final products = (response.data['items'] as List<dynamic>)
+      final products = ((response.data['items'] as List<dynamic>?) ?? [])
           .map(
             (element) => ProductModel.fromJson(element as Map<String, dynamic>),
           )
           .toList();
 
-      return products
-          .where(
-            (product) => product.name.toLowerCase().contains(
-              normalizedQuery.toLowerCase(),
-            ),
-          )
-          .toList();
+      if (normalizedQuery.isEmpty) return products;
+
+      final q = normalizedQuery.toLowerCase();
+      return products.where((product) {
+        final nameMatches = product.name.toLowerCase().contains(q);
+        final descMatches = product.description.toLowerCase().contains(q);
+        final arNameMatches = (product.nameArabic ?? '').toLowerCase().contains(q);
+        final arDescMatches = (product.descriptionArabic ?? '').toLowerCase().contains(q);
+        final colorMatches = (product.color ?? '').toLowerCase().contains(q);
+        return nameMatches || descMatches || arNameMatches || arDescMatches || colorMatches;
+      }).toList();
     } on DioException catch (e) {
       log('Error in searchProducts: $e');
       throw Exception(e.response?.data?.toString() ?? e.message);
@@ -63,8 +67,31 @@ class HomeRemoteDataSource {
         "https://accessories-eshop.runasp.net/api/categories",
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
-      List<dynamic> categories = response.data["categories"] ?? [];
-      log(categories.toString());
+
+      final body = response.data;
+      List<dynamic> categories;
+
+      if (body is List) {
+        // Response is already a plain list of category objects
+        categories = body;
+      } else if (body is Map) {
+        if (body['items'] is List) {
+          // { "items": [...], "totalPages": ... }
+          categories = body['items'] as List;
+        } else if (body['categories'] is List) {
+          // { "categories": [...] }
+          categories = body['categories'] as List;
+        } else if (body['categories'] is Map && (body['categories'] as Map)['items'] is List) {
+          // { "categories": { "items": [...] } }
+          categories = (body['categories'] as Map)['items'] as List;
+        } else {
+          categories = [];
+        }
+      } else {
+        categories = [];
+      }
+
+      log('getCategories: fetched ${categories.length} categories');
       return categories;
     } on DioException catch (e) {
       log('Error in getCategories: $e');
@@ -72,7 +99,7 @@ class HomeRemoteDataSource {
     }
   }
 
-  Future<void> addToCart(productId) async {
+  Future<void> addToCart(String productId) async {
     try {
       await dio.post(
         'https://accessories-eshop.runasp.net/api/cart/items',

@@ -1,10 +1,12 @@
 import 'package:final_project/core/theme/app_colors.dart';
 import 'package:final_project/core/theme/app_styles.dart';
-import 'package:final_project/features/home/presentation/screens/home_screen.dart';
+import 'package:final_project/features/navigation/presentation/screens/bottom_nav_bar_screen.dart';
 import 'package:flutter/material.dart';
 
 class CartEmptyScreen extends StatefulWidget {
-  const CartEmptyScreen({super.key});
+  const CartEmptyScreen({super.key, this.onStartShopping});
+
+  final VoidCallback? onStartShopping;
 
   @override
   State<CartEmptyScreen> createState() => _CartEmptyScreenState();
@@ -56,12 +58,17 @@ class _CartEmptyScreenState extends State<CartEmptyScreen> {
                 const SizedBox(height: 40),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HomeScreen(),
-                      ),
-                    );
+                    if (widget.onStartShopping != null) {
+                      widget.onStartShopping!();
+                    } else {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BottomNavigationBarScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryClr,

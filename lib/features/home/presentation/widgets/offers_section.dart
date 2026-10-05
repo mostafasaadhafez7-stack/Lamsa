@@ -37,7 +37,7 @@ class OffersSection extends StatelessWidget {
       builder: (context, state) {
         final cubit = context.read<ProductsCubit>();
 
-        if (cubit.isOffersLoading || state is GetOffersLoadingState) {
+        if ((cubit.isOffersLoading || state is GetOffersLoadingState) && cubit.offers.isEmpty) {
           return const SizedBox(
             height: 200,
             child: Center(child: CircularProgressIndicator()),
@@ -136,8 +136,8 @@ class _OfferCard extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.1),
-                    Colors.black.withOpacity(0.6),
+                    Colors.black.withValues(alpha: 0.1),
+                    Colors.black.withValues(alpha: 0.6),
                   ],
                 ),
               ),
@@ -186,7 +186,7 @@ class _OfferCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                     ),
                   ),
                 ],
