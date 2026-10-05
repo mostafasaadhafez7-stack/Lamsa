@@ -507,6 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       );
                                     }
                                   },
+                                );
                               },
                               separatorBuilder: (BuildContext context, int index) {
                                 return Divider(color: AppColors.borderSideClr);
